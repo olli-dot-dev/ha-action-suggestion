@@ -1,0 +1,44 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Action Suggestion",
+        "description": "Choose the Areas to learn from. Manual state changes on entities in these Areas are the only data this integration ever looks at - see the README for what counts as \"manual\".",
+        "data": {
+          "areas": "Areas"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Action Suggestion is already configured."
+    },
+    "error": {
+      "no_areas": "Pick at least one Area."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Action Suggestion options",
+        "description": "Thresholds for the frequency/consistency engine - how a pattern is recognised and when it's confident enough to become a suggestion.",
+        "data": {
+          "time_bucket_minutes": "Time bucket size (minutes)",
+          "numeric_bin_size": "Numeric context rounding step",
+          "min_observations": "Minimum observations before suggesting",
+          "min_consistency": "Minimum consistency (0-1)",
+          "decay_factor": "Decay factor (closer to 1 = slower fade)"
+        }
+      }
+    }
+  },
+  "services": {
+    "reset": {
+      "name": "Reset",
+      "description": "Wipes all learned events and patterns. Mainly for testing/troubleshooting."
+    },
+    "execute_suggestion": {
+      "name": "Execute suggestion",
+      "description": "Runs the action currently suggested by the targeted suggestion sensor(s), with this call's own context - so it reinforces the pattern like any other manual action."
+    }
+  }
+}

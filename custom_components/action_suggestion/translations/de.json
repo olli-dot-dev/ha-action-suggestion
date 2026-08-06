@@ -1,0 +1,44 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Action Suggestion",
+        "description": "Wähle die Bereiche (Areas) aus, aus denen gelernt werden soll. Nur manuelle Zustandsänderungen an Entities in diesen Bereichen fließen überhaupt ein - was als \"manuell\" zählt, steht im README.",
+        "data": {
+          "areas": "Bereiche"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Action Suggestion ist bereits eingerichtet."
+    },
+    "error": {
+      "no_areas": "Bitte mindestens einen Bereich auswählen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Action Suggestion – Einstellungen",
+        "description": "Schwellenwerte für die Häufigkeits-/Konsistenz-Engine - wie ein Muster erkannt wird und ab wann es sicher genug für einen Vorschlag ist.",
+        "data": {
+          "time_bucket_minutes": "Zeitfenster-Größe (Minuten)",
+          "numeric_bin_size": "Rundungsschritt für numerischen Kontext",
+          "min_observations": "Mindestanzahl Beobachtungen für einen Vorschlag",
+          "min_consistency": "Mindest-Konsistenz (0-1)",
+          "decay_factor": "Decay-Faktor (näher an 1 = langsameres Verblassen)"
+        }
+      }
+    }
+  },
+  "services": {
+    "reset": {
+      "name": "Zurücksetzen",
+      "description": "Löscht alle gelernten Events und Muster. Hauptsächlich zum Testen/Troubleshooting."
+    },
+    "execute_suggestion": {
+      "name": "Vorschlag ausführen",
+      "description": "Führt die aktuell vorgeschlagene Aktion der Ziel-Vorschlags-Entity(s) aus, mit dem Kontext dieses Aufrufs - dadurch verstärkt es das Muster wie jede andere manuelle Aktion."
+    }
+  }
+}

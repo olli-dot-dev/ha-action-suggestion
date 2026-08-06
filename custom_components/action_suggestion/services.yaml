@@ -1,0 +1,16 @@
+reset:
+  name: Reset
+  description: Wipes all learned events and patterns. Mainly for testing/troubleshooting.
+
+execute_suggestion:
+  name: Execute suggestion
+  description: >-
+    Runs the action currently suggested by the targeted suggestion sensor(s),
+    with this call's own context - so it reinforces the pattern like any other
+    manual action. Used by the example Lovelace card (see README) instead of
+    calling the underlying service directly, since which service that is
+    varies per suggestion and per moment.
+  target:
+    entity:
+      domain: sensor
+      integration: action_suggestion
