@@ -38,7 +38,13 @@ ausgeführte Automation.
    über einen Decay-Faktor an Gewicht gegenüber aktuelleren.
 4. **Vorschlags-Entity.** Erreicht ein Muster die konfigurierten Schwellenwerte
    (Mindestanzahl Beobachtungen, Mindest-Konsistenz) *und* passen gerade Wochentag,
-   Zeitfenster und Kontext, wird eine `sensor.vorschlag_<entity>`-Entity aktiv.
+   Zeitfenster und Kontext, wird eine Vorschlags-Entity aktiv. Ihr Name ist
+   `Vorschlag <Anzeigename der Ziel-Entity>`; daraus leitet Home Assistant beim
+   erstmaligen Anlegen automatisch eine `entity_id` ab (typischerweise
+   `sensor.vorschlag_<slugifizierter Anzeigename>`, siehe Beispiel unten - bei
+   Namenskollisionen mit Suffix `_2` usw., und einmal vergeben bleibt sie auch nach
+   späterer Umbenennung der Ziel-Entity bestehen). Die tatsächliche ID also im
+   Entity-Register nachsehen, statt sie zu erraten.
 5. **Tippst du den Vorschlag an**, wird die vorgeschlagene Aktion ausgeführt – das
    erzeugt wieder ein ganz normales `context.user_id`-Event und verstärkt das
    erkannte Muster automatisch weiter.
@@ -78,6 +84,11 @@ Eine Änderung lädt die Integration neu; bereits gelernte Daten bleiben erhalte
 Recorder-DB).
 
 ## Beispiel: Lovelace-Karte
+
+`sensor.vorschlag_wohnzimmer_licht` im folgenden Beispiel ist ein Platzhalter (setzt
+eine Ziel-Entity mit Anzeigenamen "Wohnzimmer Licht" voraus, siehe oben) - die
+tatsächliche `entity_id` in **Entwicklertools → Zustände** nachsehen (Filter
+`vorschlag`) und entsprechend anpassen.
 
 Jede Vorschlags-Entity hat den Zustand `active`/`inactive` und die Attribute
 `target_entity_id`, `action`, `new_state`, `confidence`, `observations` und `reason`.
