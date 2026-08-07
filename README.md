@@ -1,5 +1,10 @@
 # Action Suggestion
 
+> **Beta:** Diese Integration ist noch in aktiver Entwicklung. Funktioniert im
+> Alltag, aber Konfigurationsoptionen, Schwellenwerte und das Datenbankschema
+> können sich zwischen Versionen noch ändern – vor einem Update ggf. `patterns.db`
+> sichern. Feedback und Issues sind willkommen.
+
 Home-Assistant-Integration, die aus deinen vergangenen **manuellen** Schaltvorgängen
 Muster nach Wochentag, Uhrzeit und Zustand anderer Entities im selben Bereich lernt
 und passende Aktionen als **Vorschlag im Dashboard** anbietet – nicht als automatisch
