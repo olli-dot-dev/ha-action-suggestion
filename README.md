@@ -163,3 +163,9 @@ conditional card pro Vorschlags-Entity.
   bewusst auf später verschoben (siehe "Spätere Erweiterungen") – bis dahin am besten
   mit klar abgegrenzten, wenig "lauten" Bereichen anfangen und beobachten, ob
   überhaupt Muster mit genug Beobachtungen entstehen.
+
+## Entwicklung
+
+Diese Integration wird gemeinsam mit [Claude Code](https://claude.com/claude-code)
+entwickelt – von der Spec über die Implementierung bis zu Tests und Doku. Claude
+ist dementsprechend in den Commits als Co-Author geführt.
