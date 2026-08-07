@@ -96,11 +96,10 @@ Vorschlagsliste"** (`custom:action-suggestion-list-card`) mit, die automatisch
 pro Vorschlags-Entity nötig, und neue Vorschläge tauchen von selbst auf.
 Erkannt werden Vorschlags-Entitäten rein an der Attribut-Kombination oben
 (nicht an der `entity_id`, die sich wie beschrieben pro Ziel-Anzeigename
-unterscheidet). Die Karte wird beim Start der Integration automatisch als
-Lovelace-Ressource registriert - kein manuelles Eintragen unter
-**Einstellungen → Dashboards → Ressourcen** nötig, einfach im
-Dashboard-Editor unter "Karte hinzufügen" nach "Vorschlagsliste" suchen oder
-direkt eintragen:
+unterscheidet). Die Karte wird beim Start der Integration automatisch
+nachgeladen - kein manuelles Eintragen unter **Einstellungen → Dashboards →
+Ressourcen** nötig, einfach im Dashboard-Editor unter "Karte hinzufügen" nach
+"Vorschlagsliste" suchen oder direkt eintragen:
 
 ```yaml
 type: custom:action-suggestion-list-card
@@ -111,6 +110,19 @@ Ein Tap auf einen Eintrag führt die vorgeschlagene Aktion aus, genau wie beim
 manuellen Beispiel unten. Ohne aktive Vorschläge zeigt die Karte einen
 Platzhaltertext statt zu verschwinden, damit sie im Dashboard nicht ständig
 auftaucht und wieder wegspringt.
+
+**Kurzes Aufblitzen von "Custom element doesn't exist" beim Neuladen der
+Seite** (v. a. über eine höhere Latenz wie einen Nabu-Casa-Fernzugriff,
+weniger bei lokalem Zugriff): Das automatische Nachladen läuft unabhängig
+vom eigentlichen Dashboard-Rendering, das Element kann sich also knapp zu
+spät registrieren - Home Assistant baut die Karte danach von selbst korrekt
+neu auf (`ll-rebuild`), das Aufblitzen ist also kein dauerhafter Fehler.
+Wer das ganz vermeiden will, kann die Karte zusätzlich normal als
+Lovelace-Ressource eintragen (Einstellungen → Dashboards → Ressourcen → +
+Ressource hinzufügen → URL `/action-suggestion-card.js`, Typ
+"JavaScript-Modul") - Ressourcen werden vor dem Kartenrendern abgewartet,
+dadurch entfällt der Wettlauf komplett, genau wie bei über HACS
+installierten Custom Cards.
 
 ### Einzelne Vorschlags-Entity (für gezielt platzierte Karten)
 

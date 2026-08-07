@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.2
+
+- Diagnose: die Vorschlagsliste-Karte lädt über `add_extra_js_url`
+  unabhängig vom Dashboard-Rendering nach, statt wie eine reguläre
+  Lovelace-Ressource vor dem Kartenrendern abgewartet zu werden - bei
+  höherer Latenz (z.B. Nabu-Casa-Fernzugriff) kann das Element sich beim
+  Neuladen der Seite knapp zu spät registrieren, Home Assistant baut die
+  Karte danach aber automatisch neu auf (`ll-rebuild`), kein dauerhafter
+  Fehler. README dokumentiert das jetzt inkl. Alternative (manueller
+  Ressourcen-Eintrag, dann kein Wettlauf mehr, wie bei HACS-Karten).
+- Fix: `customElements.define`/`window.customCards.push` gegen doppeltes
+  Laden abgesichert (z.B. wenn zusätzlich zur Auto-Registrierung noch
+  manuell eine Ressource eingetragen wird) - vorher hätte ein zweiter
+  `customElements.define`-Aufruf für denselben Tag-Namen das ganze Modul
+  zum Absturz gebracht.
+
 ## 0.2.1
 
 - Fix: Vorschlagsliste-Karte registrierte sich nicht im Browser ("Custom

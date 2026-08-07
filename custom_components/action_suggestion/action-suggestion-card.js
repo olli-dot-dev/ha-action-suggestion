@@ -170,12 +170,26 @@ class ActionSuggestionListCard extends HTMLElement {
   }
 }
 
-customElements.define("action-suggestion-list-card", ActionSuggestionListCard);
+// Guarded: this integration auto-registers the script via
+// frontend.add_extra_js_url (see __init__.py), but a user is also free to
+// additionally add it as a normal Lovelace resource (e.g. to avoid the
+// load-order race described in README.md when accessed through a
+// higher-latency connection like a Nabu Casa remote URL). If both paths end
+// up loading the module, a second customElements.define() for the same tag
+// throws - browsers don't allow redefining a custom element - which would
+// otherwise take the *whole* module (and both registration paths) down.
+if (!customElements.get("action-suggestion-list-card")) {
+  customElements.define("action-suggestion-list-card", ActionSuggestionListCard);
+}
 
+// Same double-load scenario as above: if the module ever executes twice,
+// this would otherwise duplicate the picker entry.
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "action-suggestion-list-card",
-  name: "Action Suggestion – Vorschlagsliste",
-  description: "Sammelt automatisch alle gerade aktiven Vorschläge der Action-Suggestion-Integration in einer Karte.",
-  preview: false,
-});
+if (!window.customCards.some((c) => c.type === "action-suggestion-list-card")) {
+  window.customCards.push({
+    type: "action-suggestion-list-card",
+    name: "Action Suggestion – Vorschlagsliste",
+    description: "Sammelt automatisch alle gerade aktiven Vorschläge der Action-Suggestion-Integration in einer Karte.",
+    preview: false,
+  });
+}
