@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1
+
+- Fix: Vorschlagsliste-Karte registrierte sich nicht im Browser ("Custom
+  element not found"), obwohl die Datei direkt abrufbar war und die
+  Integration fehlerfrei lief - Ursache: fehlender/falscher Content-Type auf
+  `action-suggestion-card.js`. `add_extra_js_url` lädt die Datei als
+  `<script type="module">`, und Browser verweigern die Ausführung eines
+  Modul-Skripts still, wenn der Server nicht exakt einen JS-MIME-Type
+  liefert. Content-Type jetzt explizit auf `text/javascript` gesetzt statt
+  der (auf manchen Systemen unzuverlässigen) automatischen Erkennung zu
+  vertrauen.
+
 ## 0.2.0
 
 - Neue Custom Card "Action Suggestion – Vorschlagsliste"

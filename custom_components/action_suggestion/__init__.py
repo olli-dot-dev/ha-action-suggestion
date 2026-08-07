@@ -53,7 +53,20 @@ async def _serve_card_js(path: str, request: web.Request) -> web.FileResponse:
     # request rather than leaving it to unpredictable browser heuristics -
     # aiohttp's FileResponse still sets Last-Modified/ETag, so an unchanged
     # file gets an efficient 304 rather than a full re-download.
-    return web.FileResponse(path, headers={"Cache-Control": "no-cache"})
+    #
+    # Content-Type set explicitly rather than left to FileResponse's
+    # mimetypes-based guess: frontend.add_extra_js_url loads this as
+    # `<script type="module">`, and browsers refuse to execute a module
+    # script whose response Content-Type isn't a JS MIME type - silently,
+    # with no error from this integration's own code, just a "Custom
+    # element not found" from Lovelace once the card is actually used. Some
+    # systems' mimetypes databases don't map `.js` correctly (observed: file
+    # downloads fine standalone, but the module never registers), hence
+    # pinning it here instead of trusting the guess.
+    return web.FileResponse(
+        path,
+        headers={"Cache-Control": "no-cache", "Content-Type": "text/javascript; charset=utf-8"},
+    )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
