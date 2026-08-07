@@ -10,12 +10,17 @@ from __future__ import annotations
 
 import logging
 import os
+from functools import partial
+from pathlib import Path
 
 import voluptuous as vol
+from aiohttp import web
+from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
+from homeassistant.loader import async_get_integration
 
 from .const import (
     CONF_DECAY_FACTOR,
@@ -34,6 +39,21 @@ from .storage import PatternStorage
 EXECUTE_SUGGESTION_SCHEMA = vol.Schema({vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
 
 _LOGGER = logging.getLogger(__name__)
+
+# Separate hass.data key from DOMAIN (which maps entry_id -> coordinator, see
+# async_setup_entry) - the frontend card registration is process-wide, not
+# per-entry, and mixing a non-entry_id key into that dict would break
+# async_unload_entry's "no entries left" check below.
+_FRONTEND_DATA_KEY = f"{DOMAIN}_frontend"
+_CARD_JS_URL_PATH = "/action-suggestion-card.js"
+
+
+async def _serve_card_js(path: str, request: web.Request) -> web.FileResponse:
+    # "no-cache" (not "no explicit header") forces revalidation on every
+    # request rather than leaving it to unpredictable browser heuristics -
+    # aiohttp's FileResponse still sets Last-Modified/ETag, so an unchanged
+    # file gets an efficient 304 rather than a full re-download.
+    return web.FileResponse(path, headers={"Cache-Control": "no-cache"})
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -60,6 +80,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+
+    # Registers the "Vorschlagsliste" Lovelace card's JS once per running
+    # process (not once per config entry - a reload must not re-register the
+    # aiohttp route or re-inject the <script> tag, both of which would raise/
+    # duplicate). frontend.add_extra_js_url makes it load automatically on
+    # every dashboard without the user having to add it as a Lovelace
+    # resource by hand.
+    if not hass.data.get(_FRONTEND_DATA_KEY):
+        card_js_path = Path(__file__).parent / "action-suggestion-card.js"
+        hass.http.app.router.add_route("GET", _CARD_JS_URL_PATH, partial(_serve_card_js, str(card_js_path)))
+        integration = await async_get_integration(hass, DOMAIN)
+        card_js_url = f"{_CARD_JS_URL_PATH}?v={integration.version}"
+        frontend.add_extra_js_url(hass, card_js_url)
+        hass.data[_FRONTEND_DATA_KEY] = card_js_url
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))

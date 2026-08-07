@@ -83,18 +83,46 @@ Eine Änderung lädt die Integration neu; bereits gelernte Daten bleiben erhalte
 (eigene SQLite-Datenbank unter `<config>/action_suggestion/patterns.db`, nicht die
 Recorder-DB).
 
-## Beispiel: Lovelace-Karte
-
-`sensor.vorschlag_wohnzimmer_licht` im folgenden Beispiel ist ein Platzhalter (setzt
-eine Ziel-Entity mit Anzeigenamen "Wohnzimmer Licht" voraus, siehe oben) - die
-tatsächliche `entity_id` in **Entwicklertools → Zustände** nachsehen (Filter
-`vorschlag`) und entsprechend anpassen.
+## Lovelace-Karten
 
 Jede Vorschlags-Entity hat den Zustand `active`/`inactive` und die Attribute
 `target_entity_id`, `action`, `new_state`, `confidence`, `observations` und `reason`.
-Eine einzelne Button-Card funktioniert für **jede** Vorschlags-Entity unverändert,
-da der Tap den generischen `action_suggestion.execute_suggestion`-Service auf die
-Entity selbst aufruft, statt eine bestimmte Aktion fest zu verdrahten:
+
+### Vorschlagsliste (empfohlen)
+
+Die Integration bringt eine eigene Custom Card **"Action Suggestion –
+Vorschlagsliste"** (`custom:action-suggestion-list-card`) mit, die automatisch
+*alle* gerade aktiven Vorschläge sammelt und anzeigt - kein Kartenverdrahten
+pro Vorschlags-Entity nötig, und neue Vorschläge tauchen von selbst auf.
+Erkannt werden Vorschlags-Entitäten rein an der Attribut-Kombination oben
+(nicht an der `entity_id`, die sich wie beschrieben pro Ziel-Anzeigename
+unterscheidet). Die Karte wird beim Start der Integration automatisch als
+Lovelace-Ressource registriert - kein manuelles Eintragen unter
+**Einstellungen → Dashboards → Ressourcen** nötig, einfach im
+Dashboard-Editor unter "Karte hinzufügen" nach "Vorschlagsliste" suchen oder
+direkt eintragen:
+
+```yaml
+type: custom:action-suggestion-list-card
+title: Vorschläge  # optional, Default: "Vorschläge"
+```
+
+Ein Tap auf einen Eintrag führt die vorgeschlagene Aktion aus, genau wie beim
+manuellen Beispiel unten. Ohne aktive Vorschläge zeigt die Karte einen
+Platzhaltertext statt zu verschwinden, damit sie im Dashboard nicht ständig
+auftaucht und wieder wegspringt.
+
+### Einzelne Vorschlags-Entity (für gezielt platzierte Karten)
+
+Für einen bestimmten Vorschlag fest an einer Stelle im Dashboard (statt in
+der gesammelten Liste) funktioniert auch eine normale Button-Card unverändert
+für **jede** Vorschlags-Entity, da der Tap den generischen
+`action_suggestion.execute_suggestion`-Service auf die Entity selbst aufruft,
+statt eine bestimmte Aktion fest zu verdrahten. `sensor.vorschlag_wohnzimmer_licht`
+im folgenden Beispiel ist ein Platzhalter (setzt eine Ziel-Entity mit
+Anzeigenamen "Wohnzimmer Licht" voraus, siehe oben) - die tatsächliche
+`entity_id` in **Entwicklertools → Zustände** nachsehen (Filter `vorschlag`)
+und entsprechend anpassen:
 
 ```yaml
 type: button
@@ -127,10 +155,6 @@ card:
       entity_id: sensor.vorschlag_wohnzimmer_licht
 ```
 
-Eine Karte, die automatisch *alle* gerade aktiven Vorschläge sammelt und anzeigt,
-ist als spätere Erweiterung vorgesehen (Custom Card), für v1 reicht eine
-conditional card pro Vorschlags-Entity.
-
 ## Services
 
 - `action_suggestion.execute_suggestion` – führt die aktuell vorgeschlagene Aktion
@@ -149,7 +173,6 @@ conditional card pro Vorschlags-Entity.
 ## Spätere Erweiterungen
 
 - Erkennung physischer Schalter-Events (kein `context.user_id`, kein `parent_id`)
-- Custom Card für eine gesammelte Vorschlagsübersicht
 - Konfigurierbare Kontext-Sensoren zusätzlich zum Bereichs-Scoping
 - UI-gestützte Vorschlagsverwaltung (Verwerfen/Feedback direkt im Frontend)
 
