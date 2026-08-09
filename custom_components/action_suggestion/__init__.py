@@ -55,18 +55,69 @@ async def _serve_card_js(path: str, request: web.Request) -> web.FileResponse:
     # file gets an efficient 304 rather than a full re-download.
     #
     # Content-Type set explicitly rather than left to FileResponse's
-    # mimetypes-based guess: frontend.add_extra_js_url loads this as
-    # `<script type="module">`, and browsers refuse to execute a module
-    # script whose response Content-Type isn't a JS MIME type - silently,
-    # with no error from this integration's own code, just a "Custom
-    # element not found" from Lovelace once the card is actually used. Some
-    # systems' mimetypes databases don't map `.js` correctly (observed: file
-    # downloads fine standalone, but the module never registers), hence
-    # pinning it here instead of trusting the guess.
+    # mimetypes-based guess: a module script's Content-Type must be a JS
+    # MIME type or browsers refuse to execute it - silently, with no error
+    # from this integration's own code, just a "Custom element not found"
+    # from Lovelace once the card is actually used. Some systems' mimetypes
+    # databases don't map `.js` correctly (observed: file downloads fine
+    # standalone, but the module never registers), hence pinning it here
+    # instead of trusting the guess.
     return web.FileResponse(
         path,
         headers={"Cache-Control": "no-cache", "Content-Type": "text/javascript; charset=utf-8"},
     )
+
+
+async def _async_register_card_resource(hass: HomeAssistant, card_js_url: str) -> None:
+    """Registers the card as a genuine Lovelace resource (storage-mode
+    dashboards) instead of - or in addition to - frontend.add_extra_js_url.
+
+    Found the hard way (user report, HA accessed via a Nabu Casa remote
+    URL): add_extra_js_url injects the module independently of Lovelace's
+    own dashboard-rendering pipeline, so the browser can end up executing
+    it (customElements.define really does run) without Lovelace's own
+    card-creation code ever recognising the result - "Custom element
+    doesn't exist"/"not found" even though the script loaded fine, and
+    unlike the ordinary load-order race (see README), this didn't
+    self-heal on retry. A real Resource entry is the same mechanism
+    HACS-installed cards use and IS reliably awaited before Lovelace
+    starts creating card elements - manually adding one as a Lovelace
+    resource fixed it for that user, this makes that automatic. Also
+    avoids add_extra_js_url's other rough edge: since its URL includes the
+    version (?v=...) for cache-busting, add_extra_js_url would otherwise
+    accumulate one stale entry per upgrade the process has ever seen
+    rather than replacing the previous one - updating an existing Resource
+    in place doesn't have that problem.
+
+    Uses lovelace's storage-collection internals (undocumented, no public
+    API for this exists) - wrapped in a broad except so a future HA
+    version changing these internals can only mean this optimisation
+    silently doesn't apply, never that setup fails. YAML-mode dashboards
+    can't be written to this way either (resources then live in the user's
+    YAML), so both cases fall through to the add_extra_js_url call in
+    async_setup_entry as a fallback that still works, just with the rarer
+    load-order race described above.
+    """
+    try:
+        from homeassistant.components.lovelace import LOVELACE_DATA
+        from homeassistant.components.lovelace.const import MODE_STORAGE
+
+        lovelace_data = hass.data.get(LOVELACE_DATA)
+        if lovelace_data is None or lovelace_data.resource_mode != MODE_STORAGE:
+            return
+
+        resources = lovelace_data.resources
+        await resources.async_load()  # idempotent - safe even if lovelace's own setup already loaded it
+
+        base_url = card_js_url.split("?", 1)[0]
+        existing = next((item for item in resources.async_items() if item["url"].split("?", 1)[0] == base_url), None)
+
+        if existing is None:
+            await resources.async_create_item({"res_type": "module", "url": card_js_url})
+        elif existing["url"] != card_js_url:
+            await resources.async_update_item(existing["id"], {"res_type": "module", "url": card_js_url})
+    except Exception:  # noqa: BLE001 - see docstring: any failure here just means "no auto-resource this time"
+        _LOGGER.debug("Action Suggestion: konnte Lovelace-Ressource nicht automatisch eintragen", exc_info=True)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -94,17 +145,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    # Registers the "Vorschlagsliste" Lovelace card's JS once per running
-    # process (not once per config entry - a reload must not re-register the
-    # aiohttp route or re-inject the <script> tag, both of which would raise/
-    # duplicate). frontend.add_extra_js_url makes it load automatically on
-    # every dashboard without the user having to add it as a Lovelace
-    # resource by hand.
+    # Registers the "Vorschlagsliste" Lovelace card's JS so it loads
+    # automatically, without the user having to add it as a Lovelace
+    # resource by hand. Two mechanisms, both left active (see
+    # _async_register_card_resource's docstring for why one alone isn't
+    # reliable enough):
+    #   1. A genuine Lovelace resource (storage-mode dashboards) - the
+    #      preferred path, reliably awaited before Lovelace creates any
+    #      card elements. Runs on every setup/reload (not just once per
+    #      process, unlike the block below) since it's naturally
+    #      idempotent - updates the existing entry in place if the URL
+    #      (i.e. the version) changed, rather than accumulating one per
+    #      upgrade.
+    #   2. frontend.add_extra_js_url as a fallback for when 1. doesn't
+    #      apply (YAML-mode dashboards, or lovelace's storage internals
+    #      having changed) - once per running process only: a
+    #      config-entry reload must not re-register the aiohttp route or
+    #      re-add the same URL, either of which would raise/duplicate.
+    #      The card's own double-load guards (see action-suggestion-
+    #      card.js) make it safe if both end up loading it in the same
+    #      page.
+    integration = await async_get_integration(hass, DOMAIN)
+    card_js_url = f"{_CARD_JS_URL_PATH}?v={integration.version}"
+    await _async_register_card_resource(hass, card_js_url)
+
     if not hass.data.get(_FRONTEND_DATA_KEY):
         card_js_path = Path(__file__).parent / "action-suggestion-card.js"
         hass.http.app.router.add_route("GET", _CARD_JS_URL_PATH, partial(_serve_card_js, str(card_js_path)))
-        integration = await async_get_integration(hass, DOMAIN)
-        card_js_url = f"{_CARD_JS_URL_PATH}?v={integration.version}"
         frontend.add_extra_js_url(hass, card_js_url)
         hass.data[_FRONTEND_DATA_KEY] = card_js_url
 

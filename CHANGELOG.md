@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.3
+
+- Fix: die Vorschlagsliste-Karte registriert sich jetzt automatisch als
+  echte Lovelace-Ressource (Storage-Modus-Dashboards), nicht mehr nur über
+  `frontend.add_extra_js_url`. Bei einem Nutzer trat dauerhaft (nicht nur
+  vorübergehend, siehe 0.2.2) "Custom element doesn't exist" auf, obwohl
+  das Skript nachweislich fehlerfrei lud und ausführte - `add_extra_js_url`
+  läuft unabhängig vom Dashboard-Rendering, Lovelace's eigene
+  Karten-Erstellung hat das Ergebnis dabei offenbar nie mitbekommen. Eine
+  manuell eingetragene Ressource (derselbe Mechanismus, den auch
+  HACS-Karten nutzen) behob es sofort - das passiert jetzt automatisch.
+  `add_extra_js_url` bleibt als Fallback für YAML-Modus-Dashboards
+  aktiv, wo sich keine Ressource programmatisch eintragen lässt.
+- Neue Abhängigkeit `lovelace` in `manifest.json` (garantiert, dass deren
+  Ressourcen-API beim Setup schon bereit ist).
+
 ## 0.2.2
 
 - Diagnose: die Vorschlagsliste-Karte lädt über `add_extra_js_url`
